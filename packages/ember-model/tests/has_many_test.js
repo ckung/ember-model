@@ -245,3 +245,30 @@ test("relationship type cannot be empty", function() {
   /Type cannot be empty/);
 
 });
+
+test("using it in an extends of another ember-model will eagerly load relationship", function() {
+
+  var Comment = Ember.Model.extend({
+    id: Ember.attr(String)
+  }),
+  Article = Ember.Model.extend({
+    comments: Ember.hasMany(Comment, { key: 'comments', embedded: true }),
+    toString: function() {
+      return 'Article model';
+    }
+  }),
+  FavoriteArticle = Article.extend({
+    toString: function() {
+      return 'Favorite Article model';
+    }
+  });
+
+  //Works when the type is Article, not FavoriteArticle
+  //var favoriteArticle = Article.create({});
+  var favoriteArticle = FavoriteArticle.create({});
+  Ember.run(favoriteArticle, favoriteArticle.load, 1, {comments: Ember.A([{id: 'a'}, {id: 'b'}])});
+
+  ok(Comment.sideloadedData.a);
+  ok(Comment.sideloadedData.b);
+
+});
