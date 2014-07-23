@@ -6,6 +6,7 @@
     "test": "tests"
   },
   "scripts": {
+    "postinstall": "bower install",
     "test": "grunt test"
   },
   "repository": {
