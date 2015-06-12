@@ -61,7 +61,7 @@ Ember.onLoad('Ember.Application', function(Application) {
     name: "store",
 
     initialize: function(container, application) {
-      application.register('store:main', container.lookupFactory('store:application') || Ember.Model.Store);
+      application.register('store:main', application && application.Store || Ember.Model.Store);
 
       application.inject('route', 'store', 'store:main');
       application.inject('controller', 'store', 'store:main');
