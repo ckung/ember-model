@@ -1,4 +1,17 @@
-var Model, container;
+var Model, owner;
+
+function buildOwner() {
+  var Owner = Ember.Object.extend(Ember._RegistryProxyMixin, Ember._ContainerProxyMixin, {
+    init: function() {
+      this._super.apply(arguments);
+      var registry = new Ember.Registry(this._registryOptions);
+      this.__registry__ = registry;
+      this.__container__ = registry.container({ owner: this });
+    }
+  });
+
+  return Owner.create();
+}
 
 function ajaxSuccess(data) {
   return new Ember.RSVP.Promise(function(resolve, reject) {
@@ -18,17 +31,18 @@ module("Ember.RecordArray", {
       {id: 2, name: 'Stefan'},
       {id: 3, name: 'Kris'}
     ];
-    container = new Ember.Registry().container();
+    owner = buildOwner();
   },
   teardown: function() { }
 });
 
-test("load creates records with container when container exists", function() {
-  var records = Ember.RecordArray.create({modelClass: Model, container: container});
+test("load creates records with owner when owner exists", function() {
+  var records = Ember.RecordArray.create({modelClass: Model});
+  Ember.setOwner(records, owner);
   Ember.run(records, records.load, Model, Model.FIXTURES);
   records.forEach(function(record){
     ok(record.get('isLoaded'));
-    ok(record.get('container'));
+    ok(Ember.getOwner(record));
   });
 });
 

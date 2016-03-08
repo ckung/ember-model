@@ -1,22 +1,22 @@
 function NIL() {}
 
 Ember.Model.Store = Ember.Object.extend({
-  container: null,
 
   modelFor: function(type) {
-    return this.container.lookupFactory('model:'+type);
+    var owner = Ember.getOwner(this);
+    return owner._lookupFactory('model:'+type);
   },
 
   adapterFor: function(type) {
     var adapter = this.modelFor(type).adapter,
-        container = this.container;
+        owner = Ember.getOwner(this);
     var serializer = this.serializerFor(type);
     if (adapter && adapter.constructor !== Ember.Adapter) {
       adapter.set('serializer', serializer);
       return adapter;
     } else {
-      adapter = container.lookupFactory('adapter:'+ type) ||
-        container.lookupFactory('adapter:application') ||
+      adapter = owner._lookupFactory('adapter:'+ type) ||
+        owner._lookupFactory('adapter:application') ||
         Ember.RESTAdapter;
 
       return adapter ? adapter.create({serializer:serializer}) : adapter;
@@ -24,9 +24,9 @@ Ember.Model.Store = Ember.Object.extend({
   },
 
   serializerFor: function(type) {
-    var container = this.container;
-    var serializer = container.lookupFactory('serializer:'+ type) ||
-      container.lookupFactory('serializer:application') ||
+    var owner = Ember.getOwner(this);
+    var serializer = owner._lookupFactory('serializer:'+ type) ||
+      owner._lookupFactory('serializer:application') ||
       Ember.JSONSerializer;
 
     return serializer ? serializer.create() : serializer;
@@ -34,8 +34,11 @@ Ember.Model.Store = Ember.Object.extend({
 
   createRecord: function(type, props) {
     var klass = this.modelFor(type);
+    var owner = Ember.getOwner(this);
     klass.reopenClass({adapter: this.adapterFor(type)});
-    return klass.create(Ember.merge({container: this.container}, props));
+    var record = klass.create(props);
+    Ember.setOwner(record, owner);
+    return record;
   },
 
   find: function(type, id) {
@@ -50,14 +53,15 @@ Ember.Model.Store = Ember.Object.extend({
       klass.reopenClass({adapter: this.adapterFor(type)});
     // }
 
+    var owner = Ember.getOwner(this);
     if (id === NIL) {
-      return klass._findFetchAll(async, this.container);
+      return klass._findFetchAll(async, owner);
     } else if (Ember.isArray(id)) {
-      return klass._findFetchMany(id, async, this.container);
+      return klass._findFetchMany(id, async, owner);
     } else if (typeof id === 'object') {
-      return klass._findFetchQuery(id, async, this.container);
+      return klass._findFetchQuery(id, async, owner);
     } else {
-      return klass._findFetchById(id, async, this.container);
+      return klass._findFetchById(id, async, owner);
     }
   },
 

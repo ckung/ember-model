@@ -1,5 +1,18 @@
 var get = Ember.get;
 
+function buildOwner() {
+  var Owner = Ember.Object.extend(Ember._RegistryProxyMixin, Ember._ContainerProxyMixin, {
+    init: function() {
+      this._super.apply(arguments);
+      var registry = new Ember.Registry(this._registryOptions);
+      this.__registry__ = registry;
+      this.__container__ = registry.container({ owner: this });
+    }
+  });
+
+  return Owner.create();
+}
+
 module("Ember.hasMany");
 
 test("it exists", function() {
@@ -85,6 +98,7 @@ test("model can be specified with a string instead of a class", function() {
 });
 
 test("model can be specified with a string to a resolved path", function() {
+  var owner = buildOwner();
   var App;
   Ember.run(function() {
     App = Ember.Application.create({});
@@ -101,7 +115,14 @@ test("model can be specified with a string to a resolved path", function() {
     comments: Ember.hasMany('comment', { key: 'comments', embedded: true })
   });
 
-  var article = App.Article.create({container: App.__container__});
+  owner.register('model:article', App.Article);
+  owner.register('model:comment', App.Comment);
+  owner.register('model:subcomment', App.Subcomment);
+  owner.register('store:main', Ember.Model.Store);
+  var article = App.Article.create();
+
+  Ember.setOwner(article, owner);
+
   var subcomments = {
     subcomments: Ember.A([
       {id: 'c'},
@@ -216,10 +237,10 @@ test("has many records created are available from reference cache", function() {
     projects:[{
           id: 1,
           title: 'project one title',
-          company: 1, 
-          posts: [{id: 1, title: 'title', body: 'body', project:1 }, 
+          company: 1,
+          posts: [{id: 1, title: 'title', body: 'body', project:1 },
                   {id: 2, title: 'title two', body: 'body two', project:1 }]
-      }] 
+      }]
     };
 
   Company.load([compJson]);
